@@ -1,0 +1,16 @@
+{
+  "name": "whaze/local-copycat",
+  "description": "Un plugin pour dupliquer facilement un site WordPress en local.",
+  "version": "1.0.0",
+  "authors": [
+    {
+      "name": "Whaze",
+      "email": "contact@jeromebuquet.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "LocalCopyCat\\": "includes/"
+    }
+  }
+}
