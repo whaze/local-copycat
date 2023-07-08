@@ -1,6 +1,6 @@
 import {__} from '@wordpress/i18n';
 import {useEffect, useState, createRoot} from '@wordpress/element';
-import {Button, PanelBody, Panel, PanelRow, Spinner} from '@wordpress/components';
+import {Button, PanelBody, Panel, PanelRow, Spinner, ToggleControl} from '@wordpress/components';
 import {info} from '@wordpress/icons';
 import apiFetch from '@wordpress/api-fetch';
 import './admin.scss';
@@ -8,6 +8,9 @@ import './admin.scss';
 const LocalCopyCatAdmin = () => {
     const [data, setData] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [includeTheme, setIncludeTheme] = useState(true);
+    const [includePlugin, setIncludePlugin] = useState(true);
+    const [includeMedia, setIncludeMedia] = useState(true);
 
     useEffect(() => {
         fetchData();
@@ -35,6 +38,27 @@ const LocalCopyCatAdmin = () => {
                 <Panel header={__('Réglages', 'local-copycat')}>
                     <PanelBody title={__('Fichiers exportés', 'local-copycat')} icon={info} initialOpen={true}>
                         <PanelRow>
+                            <ToggleControl
+                                label={__('Inclure le thème', 'local-copycat')}
+                                checked={includeTheme}
+                                onChange={setIncludeTheme}
+                            />
+                        </PanelRow>
+                        <PanelRow>
+                            <ToggleControl
+                                label={__('Inclure les plugins', 'local-copycat')}
+                                checked={includePlugin}
+                                onChange={setIncludePlugin}
+                            />
+                        </PanelRow>
+                        <PanelRow>
+                            <ToggleControl
+                                label={__('Inclure les médias', 'local-copycat')}
+                                checked={includeMedia}
+                                onChange={setIncludeMedia}
+                            />
+                        </PanelRow>
+                        <PanelRow>
                             <Button isPrimary onClick={handleAction}>
                                 {__('Télécharger les fichiers', 'local-copycat')}
                             </Button>
@@ -49,11 +73,8 @@ const LocalCopyCatAdmin = () => {
                     </PanelBody>
                 </Panel>
             )}
-
-
         </>
-    )
-        ;
+    );
 };
 
 // Rendre le composant React dans le conteneur spécifié
@@ -62,4 +83,3 @@ if (container) {
     const root = createRoot(container);
     root.render(<LocalCopyCatAdmin/>);
 }
-
