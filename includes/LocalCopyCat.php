@@ -8,6 +8,10 @@ use ZipArchive;
 
 class LocalCopyCat
 {
+    private $include_media;
+    private $include_plugins;
+    private $include_themes;
+
     /**
      * Initialize the plugin.
      */
@@ -61,6 +65,30 @@ class LocalCopyCat
                 'permission_callback' => array($this, 'check_user_permission'),
             )
         );
+
+        register_rest_route(
+            'local-copycat/v1',
+            '/download-archive',
+            array(
+                'methods' => 'GET',
+                'callback' => array($this, 'download_archive'),
+                'permission_callback' => array($this, 'check_user_permission'),
+                'args' => array(
+                    'include_theme' => array(
+                        'type' => 'boolean',
+                        'default' => true,
+                    ),
+                    'include_plugin' => array(
+                        'type' => 'boolean',
+                        'default' => true,
+                    ),
+                    'include_media' => array(
+                        'type' => 'boolean',
+                        'default' => true,
+                    ),
+                ),
+            )
+        );
     }
 
     /**
@@ -84,8 +112,8 @@ class LocalCopyCat
     /**
      * REST API callback to get data.
      *
-     * @param WP_REST_Request $request The REST API request object.
-     * @return array|WP_Error The data or WP_Error object.
+     * @param \WP_REST_Request $request The REST API request object.
+     * @return array|\WP_Error The data or WP_Error object.
      */
     public function get_data($request)
     {
@@ -131,13 +159,20 @@ class LocalCopyCat
 
     /**
      * Download the ZIP archive with selected files.
+     *
+     * @param \WP_REST_Request $request The request object.
      */
-    public function download_archive()
+    public function download_archive(\WP_REST_Request $request)
     {
+        $this->include_themes = $request->get_param('include_theme');
+        $this->include_plugins = $request->get_param('include_plugin');
+        $this->include_media = $request->get_param('include_media');
+
         $zip = new ZipArchive();
         $archive_name = 'local-copycat-archive-' . date('Y-m-d') . '.zip';
+        $archive_path = WP_CONTENT_DIR . '/uploads/' . $archive_name;
 
-        if ($zip->open($archive_name, ZipArchive::CREATE | ZipArchive::OVERWRITE)) {
+        if ($zip->open($archive_path, ZipArchive::CREATE | ZipArchive::OVERWRITE)) {
             // Add themes folder to the archive
             if ($this->include_themes) {
                 $this->add_folder_to_archive(get_template_directory(), $zip);
@@ -155,26 +190,20 @@ class LocalCopyCat
 
             $zip->close();
 
-            // Set headers for file download
-            header('Content-Type: application/zip');
-            header('Content-Disposition: attachment; filename=' . $archive_name);
-            header('Content-Length: ' . filesize($archive_name));
-            header('Pragma: no-cache');
-            header('Expires: 0');
-
-            // Send the file to the browser for download
-            readfile($archive_name);
-
-            // Delete the temporary archive file
-            unlink($archive_name);
+            // Return the download URL
+            $download_url = content_url('/uploads/' . $archive_name);
+            return new \WP_REST_Response(array('download_url' => $download_url), 200);
+        } else {
+            return new \WP_Error('archive_error', 'Error creating the archive.', array('status' => 500));
         }
     }
+
 
     /**
      * Add a folder to the ZIP archive recursively.
      *
      * @param string $folder The folder path.
-     * @param ZipArchive $zip The ZipArchive object.
+     * @param \ZipArchive $zip The ZipArchive object.
      */
     private function add_folder_to_archive($folder, $zip)
     {
