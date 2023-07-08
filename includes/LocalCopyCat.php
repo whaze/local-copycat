@@ -169,7 +169,7 @@ class LocalCopyCat
         $this->include_media = $request->get_param('include_media');
 
         $zip = new ZipArchive();
-        $archive_name = 'local-copycat-archive-' . date('Y-m-d') . '.zip';
+        $archive_name = 'local-copycat-archive-' . date('Y-m-d-H-i-s') . '.zip';
         $archive_path = WP_CONTENT_DIR . '/uploads/' . $archive_name;
 
         if ($zip->open($archive_path, ZipArchive::CREATE | ZipArchive::OVERWRITE)) {
