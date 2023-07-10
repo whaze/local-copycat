@@ -77,14 +77,20 @@ class LocalCopyCat
                     'include_theme' => array(
                         'type' => 'boolean',
                         'default' => true,
+                        'sanitize_callback' => 'rest_sanitize_boolean',
+                        'validate_callback' => 'rest_validate_request_arg',
                     ),
                     'include_plugin' => array(
                         'type' => 'boolean',
                         'default' => true,
+                        'sanitize_callback' => 'rest_sanitize_boolean',
+                        'validate_callback' => 'rest_validate_request_arg',
                     ),
                     'include_media' => array(
                         'type' => 'boolean',
                         'default' => true,
+                        'sanitize_callback' => 'rest_sanitize_boolean',
+                        'validate_callback' => 'rest_validate_request_arg',
                     ),
                 ),
             )
@@ -164,6 +170,9 @@ class LocalCopyCat
      */
     public function download_archive(\WP_REST_Request $request)
     {
+        echo '<pre>';
+        var_dump($request->get_params());
+        echo '</pre>';die;
         $this->include_themes = $request->get_param('include_theme');
         $this->include_plugins = $request->get_param('include_plugin');
         $this->include_media = $request->get_param('include_media');
