@@ -83,15 +83,14 @@ const LocalCopyCatAdmin = () => {
             });
 
             console.log(data);
-
-            // Vérifie si l'URL de téléchargement existe dans la réponse
-            if (data.download_url) {
-                setDownloadUrl(data.download_url);
+            if (data.archive_id) {
+                // Download the archive using the new REST route
+                window.location.href = `/wp-json/local-copycat/v1/download-archive/${data.archive_id}`;
             } else {
-                console.error('Download URL not found.');
+                console.error('Archive ID not found.');
             }
         } catch (error) {
-            console.error('Error fetching download URL:', error);
+            console.error('Error fetching archive ID:', error);
         }
     };
 

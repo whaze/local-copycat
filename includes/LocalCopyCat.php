@@ -115,6 +115,15 @@ class LocalCopyCat
             )
         );
 
+        register_rest_route(
+            'local-copycat/v1',
+            '/download-archive/(?P<id>[a-zA-Z0-9]+)',
+            array(
+                'methods' => 'GET',
+                'callback' => array($this, 'serve_archive'),
+                'permission_callback' => array($this, 'check_user_permission'),
+            )
+        );
     }
 
     /**
@@ -228,13 +237,13 @@ class LocalCopyCat
         $this->include_media = $request->get_param('include_media');
 
         $zip = new ZipArchive();
-        $archive_name = 'local-copycat-archive-' . date('Y-m-d-H-i-s') . '.zip';
+        $archive_name = 'local-copycat-archive-' . date('Y-m-d-H-i-s') . uniqid() . '.zip';
         $archive_path = WP_CONTENT_DIR . '/uploads/' . $archive_name;
 
         if ($zip->open($archive_path, ZipArchive::CREATE | ZipArchive::OVERWRITE)) {
             // Add themes folder to the archive
             if ($this->include_themes) {
-                $this->add_folder_to_archive(get_template_directory(), $zip);
+                $this->add_folder_to_archive(WP_CONTENT_DIR . '/themes', $zip);
             }
 
             // Add plugins folder to the archive
@@ -249,14 +258,44 @@ class LocalCopyCat
 
             $zip->close();
 
-            // Return the download URL
-            $download_url = content_url('/uploads/' . $archive_name);
-            return new \WP_REST_Response(array('download_url' => $download_url), 200);
+            // Generate a unique ID for the archive
+            $archive_id = wp_hash($archive_path);
+
+            // Store the archive path in the options table
+            update_option("local_copycat_archive_$archive_id", $archive_path);
+
+            // Return the archive ID
+            return new \WP_REST_Response(array('archive_id' => $archive_id), 200);
         } else {
             return new \WP_Error('archive_error', 'Error creating the archive.', array('status' => 500));
         }
     }
 
+
+    public function serve_archive(\WP_REST_Request $request)
+    {
+        // Get the archive ID
+        $archive_id = $request->get_param('id');
+
+        // Get the archive path
+        $archive_path = get_option("local_copycat_archive_$archive_id");
+
+        if (!$archive_path || !file_exists($archive_path)) {
+            return new \WP_Error('archive_not_found', 'Archive not found.', array('status' => 404));
+        }
+
+        // Serve the file
+        header('Content-Type: application/zip');
+        header('Content-Disposition: attachment; filename=' . basename($archive_path));
+        header('Content-Length: ' . filesize($archive_path));
+        readfile($archive_path);
+
+        // Delete the file and the option
+        unlink($archive_path);
+        delete_option("local_copycat_archive_$archive_id");
+
+        exit;
+    }
 
     /**
      * Add a folder to the ZIP archive recursively.
