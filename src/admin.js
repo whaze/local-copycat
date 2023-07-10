@@ -5,29 +5,57 @@ import {info} from '@wordpress/icons';
 import apiFetch from '@wordpress/api-fetch';
 import './admin.scss';
 
-
 const LocalCopyCatAdmin = () => {
     // const [data, setData] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingAvailableRoles, setIsLoadingAvailableRoles] = useState(true);
+    const [isloadingAllowedRoles, setIsLoadingAllowedRoles] = useState(true);
     const [includeTheme, setIncludeTheme] = useState(true);
     const [includePlugin, setIncludePlugin] = useState(true);
     const [includeMedia, setIncludeMedia] = useState(true);
     const [downloadUrl, setDownloadUrl] = useState(null);
+    const [allowedRoles, setAllowedRoles] = useState([]);
+    const [availableRoles, setAvailableRoles] = useState([]);
 
-
-    /*useEffect(() => {
-        // fetchData();
-    }, []);*/
-
-    /*const fetchData = async () => {
+    const fetchAllowedRoles = async () => {
         try {
-            const response = await apiFetch({path: '/local-copycat/v1/data'});
-            setData(response);
-            setIsLoading(false);
+            const response = await apiFetch({path: '/local-copycat/v1/allowed-roles'});
+            setAllowedRoles(response);
+            setIsLoadingAllowedRoles(false);
         } catch (error) {
-            console.error('Error fetching data:', error);
+            console.error('Error fetching allowed roles:', error);
         }
-    };*/
+
+    };
+
+    const fetchAvailableRoles = async () => {
+        try {
+            const response = await apiFetch({path: '/local-copycat/v1/available-roles'});
+            setAvailableRoles(response);
+            setIsLoadingAvailableRoles(false);
+        } catch (error) {
+            console.error('Error fetching available roles:', error);
+        }
+
+    }
+
+    useEffect(() => {
+        fetchAvailableRoles();
+        fetchAllowedRoles();
+    }, []);
+
+    const handleToggleRole = async (role, isChecked) => {
+        const newAllowedRoles = isChecked
+            ? [...allowedRoles, role]
+            : allowedRoles.filter((r) => r !== role);
+
+        await apiFetch({
+            path: '/local-copycat/v1/allowed-roles',
+            method: 'POST',
+            data: {allowed_roles: newAllowedRoles},
+        });
+
+        setAllowedRoles(newAllowedRoles);
+    };
 
     const handleAction = async () => {
         const selectedFiles = [];
@@ -67,12 +95,8 @@ const LocalCopyCatAdmin = () => {
         }
     };
 
-
     return (
         <>
-            {/*{isLoading ? (
-                <Spinner/>
-            ) : (*/}
             <Panel header={__('Réglages', 'local-copycat')}>
                 <PanelBody title={__('Fichiers exportés', 'local-copycat')} icon={info} initialOpen={true}>
                     <PanelRow>
@@ -104,16 +128,21 @@ const LocalCopyCatAdmin = () => {
                     <PanelRow>
                         {downloadUrl && <a href={downloadUrl} download>{__('Télécharger le ZIP', 'local-copycat')}</a>}
                     </PanelRow>
-                    {/*<PanelRow>
-                            <ul>
-                                {data.map((item, index) => (
-                                    <li key={index}>{item.name}</li>
-                                ))}
-                            </ul>
-                        </PanelRow>*/}
                 </PanelBody>
+
+                <PanelBody title={__('Rôles authorisés', 'local-copycat')} initialOpen={true}>
+                    {isLoadingAvailableRoles ? <Spinner/> : availableRoles.map((role) => (
+                        <PanelRow key={role.slug}>
+                            <ToggleControl label={role.name}
+                                           onChange={() => handleToggleRole(role.slug, !allowedRoles.includes(role.slug))}
+                                           checked={allowedRoles.includes(role.slug)}
+                                           disabled={role.slug === 'administrator'}
+                            />
+                        </PanelRow>
+                    ))}
+                </PanelBody>
+
             </Panel>
-            {/*)}*/}
         </>
     );
 };

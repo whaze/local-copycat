@@ -57,17 +57,6 @@ class LocalCopyCat
     {
         register_rest_route(
             'local-copycat/v1',
-            '/data',
-            array(
-                'methods' => 'GET',
-                'callback' => array($this, 'get_data'),
-//                'permission_callback' => '__return_true', // Adjust the permission callback as needed
-                'permission_callback' => array($this, 'check_user_permission'),
-            )
-        );
-
-        register_rest_route(
-            'local-copycat/v1',
             '/download-archive',
             array(
                 'methods' => 'GET',
@@ -95,6 +84,37 @@ class LocalCopyCat
                 ),
             )
         );
+
+        register_rest_route(
+            'local-copycat/v1',
+            '/available-roles',
+            array(
+                'methods' => 'GET',
+                'callback' => array($this, 'get_available_roles'),
+                'permission_callback' => array($this, 'check_user_permission'),
+            )
+        );
+
+        register_rest_route(
+            'local-copycat/v1',
+            '/allowed-roles',
+            array(
+                'methods' => 'GET',
+                'callback' => array($this, 'get_allowed_roles'),
+                'permission_callback' => array($this, 'check_user_permission'),
+            )
+        );
+
+        register_rest_route(
+            'local-copycat/v1',
+            '/allowed-roles',
+            array(
+                'methods' => 'POST',
+                'callback' => array($this, 'update_allowed_roles'),
+                'permission_callback' => array($this, 'check_user_permission'),
+            )
+        );
+
     }
 
     /**
@@ -112,26 +132,59 @@ class LocalCopyCat
             );
         }
 
-        return true;
+        $user = wp_get_current_user();
+        $allowed_roles = get_option('local_copycat_allowed_roles', array('administrator'));
+
+        if (array_intersect($allowed_roles, $user->roles)) {
+            return true;
+        } else {
+            return new \WP_Error(
+                'rest_forbidden',
+                __('You do not have permission to access this endpoint.', 'local-copycat'),
+                array('status' => 403)
+            );
+        }
+
     }
 
-    /**
-     * REST API callback to get data.
-     *
-     * @param \WP_REST_Request $request The REST API request object.
-     * @return array|\WP_Error The data or WP_Error object.
-     */
-    public function get_data($request)
+    public function get_available_roles()
     {
-        // Perform logic to fetch and return data
-        $data = array(
-            array('name' => 'Item 1'),
-            array('name' => 'Item 2'),
-            array('name' => 'Item 3'),
-        );
+        $roles = array();
+        foreach (wp_roles()->roles as $role => $details) {
+            $roles[] = ['slug' => $role, 'name' => $details['name']];
+        }
 
-        return $data;
+
+        return $roles;
     }
+
+    public function get_allowed_roles()
+    {
+        return get_option('local_copycat_allowed_roles', array('administrator'));
+    }
+
+    public function update_allowed_roles(\WP_REST_Request $request)
+    {
+        $allowed_roles = $request->get_param('allowed_roles');
+
+        if (!is_array($allowed_roles)) {
+            return new \WP_Error(
+                'invalid_param',
+                __('The allowed_roles parameter must be an array.', 'local-copycat'),
+                array('status' => 400)
+            );
+        }
+
+        // s'assurer que $allowed_roles contient toujours au minimum le rôle administrateur
+        if (!in_array('administrator', $allowed_roles)) {
+            $allowed_roles[] = 'administrator';
+        }
+
+        update_option('local_copycat_allowed_roles', $allowed_roles);
+
+        return $allowed_roles;
+    }
+
 
     /**
      * Add admin page.
@@ -170,9 +223,6 @@ class LocalCopyCat
      */
     public function download_archive(\WP_REST_Request $request)
     {
-        echo '<pre>';
-        var_dump($request->get_params());
-        echo '</pre>';die;
         $this->include_themes = $request->get_param('include_theme');
         $this->include_plugins = $request->get_param('include_plugin');
         $this->include_media = $request->get_param('include_media');
