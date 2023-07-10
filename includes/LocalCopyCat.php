@@ -4,6 +4,9 @@ namespace LocalCopyCat;
 
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use WP_REST_Request;
+use WP_REST_Response;
+use WP_Error;
 use ZipArchive;
 
 class LocalCopyCat
@@ -129,12 +132,12 @@ class LocalCopyCat
     /**
      * Check user permission for the REST route.
      *
-     * @return bool|\WP_Error Whether the user has permission or not.
+     * @return bool|WP_Error Whether the user has permission or not.
      */
     public function check_user_permission()
     {
         if (!is_user_logged_in()) {
-            return new \WP_Error(
+            return new WP_Error(
                 'rest_forbidden',
                 __('You must be logged in to access this endpoint.', 'local-copycat'),
                 array('status' => 401)
@@ -147,7 +150,7 @@ class LocalCopyCat
         if (array_intersect($allowed_roles, $user->roles)) {
             return true;
         } else {
-            return new \WP_Error(
+            return new WP_Error(
                 'rest_forbidden',
                 __('You do not have permission to access this endpoint.', 'local-copycat'),
                 array('status' => 403)
@@ -172,12 +175,12 @@ class LocalCopyCat
         return get_option('local_copycat_allowed_roles', array('administrator'));
     }
 
-    public function update_allowed_roles(\WP_REST_Request $request)
+    public function update_allowed_roles(WP_REST_Request $request)
     {
         $allowed_roles = $request->get_param('allowed_roles');
 
         if (!is_array($allowed_roles)) {
-            return new \WP_Error(
+            return new WP_Error(
                 'invalid_param',
                 __('The allowed_roles parameter must be an array.', 'local-copycat'),
                 array('status' => 400)
@@ -228,9 +231,9 @@ class LocalCopyCat
     /**
      * Download the ZIP archive with selected files.
      *
-     * @param \WP_REST_Request $request The request object.
+     * @param WP_REST_Request $request The request object.
      */
-    public function download_archive(\WP_REST_Request $request)
+    public function download_archive(WP_REST_Request $request)
     {
         $this->include_themes = $request->get_param('include_theme');
         $this->include_plugins = $request->get_param('include_plugin');
@@ -265,14 +268,14 @@ class LocalCopyCat
             update_option("local_copycat_archive_$archive_id", $archive_path);
 
             // Return the archive ID
-            return new \WP_REST_Response(array('archive_id' => $archive_id), 200);
+            return new WP_REST_Response(array('archive_id' => $archive_id), 200);
         } else {
-            return new \WP_Error('archive_error', 'Error creating the archive.', array('status' => 500));
+            return new WP_Error('archive_error', 'Error creating the archive.', array('status' => 500));
         }
     }
 
 
-    public function serve_archive(\WP_REST_Request $request)
+    public function serve_archive(WP_REST_Request $request)
     {
         // Get the archive ID
         $archive_id = $request->get_param('id');
@@ -281,7 +284,7 @@ class LocalCopyCat
         $archive_path = get_option("local_copycat_archive_$archive_id");
 
         if (!$archive_path || !file_exists($archive_path)) {
-            return new \WP_Error('archive_not_found', 'Archive not found.', array('status' => 404));
+            return new WP_Error('archive_not_found', 'Archive not found.', array('status' => 404));
         }
 
         // Serve the file
@@ -301,9 +304,9 @@ class LocalCopyCat
      * Add a folder to the ZIP archive recursively.
      *
      * @param string $folder The folder path.
-     * @param \ZipArchive $zip The ZipArchive object.
+     * @param ZipArchive $zip The ZipArchive object.
      */
-    private function add_folder_to_archive($folder, $zip)
+    private function add_folder_to_archive(string $folder, ZipArchive $zip)
     {
         $iterator = new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator($folder, RecursiveDirectoryIterator::SKIP_DOTS),
