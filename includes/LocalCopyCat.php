@@ -281,6 +281,7 @@ class LocalCopyCat
         $this->include_plugins = $request->get_param('include_plugin');
         $this->include_media = $request->get_param('include_media');
 
+        // Prepare the files
         $files = [];
 
         // Add themes files to the task
@@ -298,11 +299,32 @@ class LocalCopyCat
             $files = array_merge($files, $this->get_files(WP_CONTENT_DIR . '/uploads'));
         }
 
+        if (!$files) {
+            return new WP_Error('invalid_files', 'Invalid files.', array('status' => 400));
+        }
+
         // Generate a unique ID for the task
         $task_id = wp_generate_uuid4();
 
+        // Create a new archive task
+        $upload_dir = wp_upload_dir();
+        $archive_dir = $upload_dir['basedir'] . "/local-copycat";
+
+        // Create the directory if it doesn't exist
+        if (!file_exists($archive_dir)) {
+            wp_mkdir_p($archive_dir);
+        }
+
+        $task = array(
+            'id' => $task_id,
+            'files' => $files,
+            'archive_path' => "$archive_dir/$task_id.zip",
+            'progress' => 0,
+            'completed' => false,
+        );
+
         // Store the task in the options table
-        update_option("local_copycat_task_$task_id", $files);
+        update_option("local_copycat_task_$task_id", $task);
 
         // Return the task ID
         return new WP_REST_Response(array('task_id' => $task_id), 200);
@@ -354,8 +376,7 @@ class LocalCopyCat
             $files = array_slice($task['files'], $task['progress'], self::FILES_PER_BATCH);
             foreach ($files as $file) {
                 // Add the file to the archive
-                $local_path = substr($file, strlen(ABSPATH)); // Compute the relative path of the file
-                $zip->addFile($file, $local_path);
+                $zip->addFile($file, $file);
             }
 
 
