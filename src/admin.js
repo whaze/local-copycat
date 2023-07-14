@@ -16,6 +16,7 @@ const LocalCopyCatAdmin = () => {
     const [allowedRoles, setAllowedRoles] = useState([]);
     const [availableRoles, setAvailableRoles] = useState([]);
     const [notice, setNotice] = useState(null);
+    const [downloadEnabled, setDownloadEnabled] = useState(false);
 
     const fetchAllowedRoles = async () => {
         try {
@@ -169,6 +170,8 @@ const LocalCopyCatAdmin = () => {
                     status: 'success',
                     message: __('L\'archivage est terminé.', 'local-copycat'),
                 });
+                setDownloadEnabled(true);
+                setDownloadUrl(`/wp-json/local-copycat/v1/download-archive/${taskId}`);
             } else {
                 setNotice({
                     status: 'success',
@@ -220,11 +223,13 @@ const LocalCopyCatAdmin = () => {
                     </PanelRow>
                     <PanelRow>
                         <Button isPrimary onClick={handleAction}>
-                            {__('Télécharger les fichiers', 'local-copycat')}
+                            {__('Créer une archive', 'local-copycat')}
                         </Button>
                     </PanelRow>
                     <PanelRow>
-                        {downloadUrl && <a href={downloadUrl} download>{__('Télécharger le ZIP', 'local-copycat')}</a>}
+                        <Button isPrimary onClick={() => window.location.href = downloadUrl} disabled={!downloadUrl}>
+                            {__('Télécharger l\'archive', 'local-copycat')}
+                        </Button>
                     </PanelRow>
                 </PanelBody>
 
