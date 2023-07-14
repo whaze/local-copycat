@@ -59,35 +59,7 @@ class LocalCopyCat
      */
     public function register_rest_routes()
     {
-        /*register_rest_route(
-            'local-copycat/v1',
-            '/download-archive',
-            array(
-                'methods' => 'GET',
-                'callback' => array($this, 'download_archive'),
-                'permission_callback' => array($this, 'check_user_permission'),
-                'args' => array(
-                    'include_theme' => array(
-                        'type' => 'boolean',
-                        'default' => true,
-                        'sanitize_callback' => 'rest_sanitize_boolean',
-                        'validate_callback' => 'rest_validate_request_arg',
-                    ),
-                    'include_plugin' => array(
-                        'type' => 'boolean',
-                        'default' => true,
-                        'sanitize_callback' => 'rest_sanitize_boolean',
-                        'validate_callback' => 'rest_validate_request_arg',
-                    ),
-                    'include_media' => array(
-                        'type' => 'boolean',
-                        'default' => true,
-                        'sanitize_callback' => 'rest_sanitize_boolean',
-                        'validate_callback' => 'rest_validate_request_arg',
-                    ),
-                ),
-            )
-        );*/
+
         register_rest_route(
             'local-copycat/v1',
             '/create-archive-task',
@@ -167,13 +139,53 @@ class LocalCopyCat
 
         register_rest_route(
             'local-copycat/v1',
+            '/archives',
+            array(
+                'methods' => 'GET',
+                'callback' => array($this, 'get_archives'),
+                'permission_callback' => array($this, 'check_user_permission'),
+            )
+        );
+
+        register_rest_route(
+            'local-copycat/v1',
+            '/archives/(?P<id>[a-zA-Z0-9]+)',
+
+            array(
+                'methods' => 'DELETE',
+                'callback' => array($this, 'delete_archive'),
+//                'permission_callback' => array($this, 'check_user_permission'),
+                'permission_callback' => '__return_true',
+                'args' => array(
+                    'id' => array(
+                        'required' => true,
+                        'type' => 'string',
+                        'sanitize_callback' => 'sanitize_text_field',
+                        'validate_callback' => 'rest_validate_request_arg',
+                    ),
+                ),
+            )
+        );
+
+        register_rest_route(
+            'local-copycat/v1',
             '/download-archive/(?P<id>[a-zA-Z0-9]+)',
             array(
                 'methods' => 'GET',
                 'callback' => array($this, 'serve_archive'),
-                'permission_callback' => array($this, 'check_user_permission'),
+//                'permission_callback' => array($this, 'check_user_permission'),
+            'permission_callback' => '__return_true',
+                'args' => array(
+                    'id' => array(
+                        'required' => true,
+                        'type' => 'string',
+                        'sanitize_callback' => 'sanitize_text_field',
+                        'validate_callback' => 'rest_validate_request_arg',
+                    ),
+                ),
             )
         );
+
     }
 
     /**
@@ -384,6 +396,8 @@ class LocalCopyCat
             $task['progress'] += count($files);
             if ($task['progress'] >= count($task['files'])) {
                 $task['completed'] = true;
+                // Save the archive URL in the options
+                update_option("local_copycat_archive_$task_id", $task['archive_path']);
             }
             update_option("local_copycat_task_$task_id", $task);
 
@@ -401,54 +415,6 @@ class LocalCopyCat
         }
 
     }
-
-
-    /**
-     * Download the ZIP archive with selected files.
-     *
-     * @param WP_REST_Request $request The request object.
-     */
-    public function download_archive(WP_REST_Request $request)
-    {
-        $this->include_themes = $request->get_param('include_theme');
-        $this->include_plugins = $request->get_param('include_plugin');
-        $this->include_media = $request->get_param('include_media');
-
-        $zip = new ZipArchive();
-        $archive_name = 'local-copycat-archive-' . date('Y-m-d-H-i-s') . uniqid() . '.zip';
-        $archive_path = WP_CONTENT_DIR . '/uploads/' . $archive_name;
-
-        if ($zip->open($archive_path, ZipArchive::CREATE | ZipArchive::OVERWRITE)) {
-            // Add themes folder to the archive
-            if ($this->include_themes) {
-                $this->add_folder_to_archive(WP_CONTENT_DIR . '/themes', $zip);
-            }
-
-            // Add plugins folder to the archive
-            if ($this->include_plugins) {
-                $this->add_folder_to_archive(WP_PLUGIN_DIR, $zip);
-            }
-
-            // Add media files to the archive
-            if ($this->include_media) {
-                $this->add_folder_to_archive(WP_CONTENT_DIR . '/uploads', $zip);
-            }
-
-            $zip->close();
-
-            // Generate a unique ID for the archive
-            $archive_id = wp_hash($archive_path);
-
-            // Store the archive path in the options table
-            update_option("local_copycat_archive_$archive_id", $archive_path);
-
-            // Return the archive ID
-            return new WP_REST_Response(array('archive_id' => $archive_id), 200);
-        } else {
-            return new WP_Error('archive_error', 'Error creating the archive.', array('status' => 500));
-        }
-    }
-
 
     public function serve_archive(WP_REST_Request $request)
     {
@@ -495,4 +461,46 @@ class LocalCopyCat
             }
         }
     }
+
+    public function get_archives()
+    {
+        // Get all options starting with "local_copycat_archive_"
+        global $wpdb;
+        $options = $wpdb->get_results(
+            "SELECT option_name, option_value FROM $wpdb->options WHERE option_name LIKE 'local_copycat_archive_%'",
+            ARRAY_A
+        );
+        if ($wpdb->last_error) {
+            die($wpdb->last_error);
+        }
+        // Format the results
+        $archives = array_map(function ($option) {
+            return array(
+                'id' => str_replace('local_copycat_archive_', '', $option['option_name']),
+                'path' => $option['option_value'],
+            );
+        }, $options);
+
+        return $archives;
+    }
+
+    public function delete_archive(WP_REST_Request $request)
+    {
+        // Get the archive ID
+        $archive_id = $request->get_param('id');
+
+        // Get the archive path
+        $archive_path = get_option("local_copycat_archive_$archive_id");
+
+        if (!$archive_path || !file_exists($archive_path)) {
+            return new WP_Error('archive_not_found', 'Archive not found.', array('status' => 404));
+        }
+
+        // Delete the file and the option
+        unlink($archive_path);
+        delete_option("local_copycat_archive_$archive_id");
+
+        return array('status' => 'success', 'message' => 'Archive deleted.');
+    }
+
 }
