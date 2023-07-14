@@ -39,6 +39,10 @@ const LocalCopyCatAdmin = () => {
             setIsLoadingAvailableRoles(false);
         } catch (error) {
             console.error('Error fetching available roles:', error);
+            setNotice({
+                status: 'error',
+                message: __('Une erreur est survenue lors de la récupération des rôles disponibles.', 'local-copycat'),
+            });
         }
 
     }
@@ -48,18 +52,43 @@ const LocalCopyCatAdmin = () => {
         fetchAllowedRoles();
     }, []);
 
+    useEffect(() => {
+        let timeout;
+        if (notice && notice.status === 'success') {
+            timeout = setTimeout(() => {
+                setNotice(null);
+            }, 5000); // 10000 milliseconds = 10 seconds
+        }
+        // Cleanup function to clear the timeout when the component unmounts or when the notice changes
+        return () => {
+            clearTimeout(timeout);
+        };
+    }, [notice]); // Effect runs when the notice state changes
+
     const handleToggleRole = async (role, isChecked) => {
-        const newAllowedRoles = isChecked
-            ? [...allowedRoles, role]
-            : allowedRoles.filter((r) => r !== role);
+        try {
+            const newAllowedRoles = isChecked
+                ? [...allowedRoles, role]
+                : allowedRoles.filter((r) => r !== role);
 
-        await apiFetch({
-            path: '/local-copycat/v1/allowed-roles',
-            method: 'POST',
-            data: {allowed_roles: newAllowedRoles},
-        });
+            await apiFetch({
+                path: '/local-copycat/v1/allowed-roles',
+                method: 'POST',
+                data: {allowed_roles: newAllowedRoles},
+            });
 
-        setAllowedRoles(newAllowedRoles);
+            setAllowedRoles(newAllowedRoles);
+            setNotice({
+                status: 'success',
+                message: __('Les rôles autorisés ont été mis à jour avec succès.', 'local-copycat'),
+            });
+        } catch (error) {
+            console.error('Error updating allowed roles:', error);
+            setNotice({
+                status: 'error',
+                message: __('Une erreur est survenue lors de la mise à jour des rôles autorisés.', 'local-copycat'),
+            });
+        }
     };
 
     const handleAction = async () => {
@@ -91,11 +120,23 @@ const LocalCopyCatAdmin = () => {
             if (data.archive_id) {
                 // Download the archive using the new REST route
                 window.location.href = `/wp-json/local-copycat/v1/download-archive/${data.archive_id}`;
+                setNotice({
+                    status: 'success',
+                    message: __('Le téléchargement des fichiers a commencé.', 'local-copycat'),
+                });
             } else {
                 console.error('Archive ID not found.');
+                setNotice({
+                    status: 'error',
+                    message: __('ID de l\'archive non trouvé.', 'local-copycat'),
+                });
             }
         } catch (error) {
             console.error('Error fetching archive ID:', error);
+            setNotice({
+                status: 'error',
+                message: __('Une erreur est survenue lors de la récupération de l\'ID de l\'archive.', 'local-copycat'),
+            });
         }
     };
 
@@ -105,7 +146,8 @@ const LocalCopyCatAdmin = () => {
 
     return (
         <>
-            {notice && <Notice status={notice.status} isDismissible={true} onDismiss={resetNotice}>{notice.message}</Notice>}
+            {notice &&
+                <Notice status={notice.status} isDismissible={true} onDismiss={resetNotice}>{notice.message}</Notice>}
             <Panel header={__('Réglages', 'local-copycat')}>
                 <PanelBody title={__('Fichiers exportés', 'local-copycat')} icon={info} initialOpen={true}>
                     <PanelRow>
