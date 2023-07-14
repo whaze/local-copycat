@@ -11,6 +11,7 @@ use ZipArchive;
 
 class LocalCopyCat
 {
+    const FILES_PER_BATCH = 100;
     private $include_media;
     private $include_plugins;
     private $include_themes;
@@ -342,10 +343,33 @@ class LocalCopyCat
         }
 
         // Perform the archive task
-        // We will implement this in the next steps
+        // Open the archive
+        $zip = new ZipArchive();
+        if (!$zip->open($task['archive_path'], ZipArchive::CREATE)) {
+            return new WP_Error('archive_error', 'Error opening the archive.', array('status' => 500));
+        }
+
+        // Process a batch of files
+        $files = array_slice($task['files'], $task['progress'], self::FILES_PER_BATCH);
+        foreach ($files as $file) {
+            // Add the file to the archive
+            $local_path = substr($file, strlen(ABSPATH)); // Compute the relative path of the file
+            $zip->addFile($file, $local_path);
+        }
+
+
+        // Update the task progress
+        $task['progress'] += count($files);
+        if ($task['progress'] >= count($task['files'])) {
+            $task['completed'] = true;
+        }
+        update_option("local_copycat_task_$task_id", $task);
+
+        // Close the archive
+        $zip->close();
 
         // Return a response
-        return new WP_REST_Response(array('status' => 'success', 'message' => 'Archive task started.'), 200);
+        return new WP_REST_Response(array('status' => 'success', 'message' => 'Archive task in progress.', 'task' => $task), 200);
     }
 
 

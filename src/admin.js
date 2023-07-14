@@ -158,16 +158,25 @@ const LocalCopyCatAdmin = () => {
 
     const performArchiveTask = async (taskId) => {
         try {
-            await apiFetch({
+            const response = await apiFetch({
                 path: `/local-copycat/v1/perform-archive-task`,
                 method: 'POST',
                 data: {task_id: taskId},
             });
 
-            setNotice({
-                status: 'success',
-                message: __('La tâche d\'archivage a commencé.', 'local-copycat'),
-            });
+            if (response.task.completed) {
+                setNotice({
+                    status: 'success',
+                    message: __('L\'archivage est terminé.', 'local-copycat'),
+                });
+            } else {
+                setNotice({
+                    status: 'success',
+                    message: __('Archivage en cours...', 'local-copycat'),
+                });
+                // Continue the archive task
+                performArchiveTask(taskId);
+            }
         } catch (error) {
             console.error('Error performing archive task:', error);
             setNotice({
