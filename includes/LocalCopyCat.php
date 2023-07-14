@@ -328,48 +328,54 @@ class LocalCopyCat
 
     public function perform_archive_task(WP_REST_Request $request)
     {
-        $task_id = $request->get_param('task_id');
+        try {
+            $task_id = $request->get_param('task_id');
 
-        // Retrieve the task data
-        $task = get_option("local_copycat_task_$task_id");
+            // Retrieve the task data
+            $task = get_option("local_copycat_task_$task_id");
 
-        if (!$task) {
-            return new WP_Error('task_not_found', 'Task not found.', array('status' => 404));
+            if (!$task) {
+                return new WP_Error('task_not_found', 'Task not found.', array('status' => 404));
+            }
+
+            // Check if the task is already completed
+            if ($task['completed']) {
+                return new WP_Error('task_already_completed', 'The task is already completed.', array('status' => 409));
+            }
+
+            // Perform the archive task
+            // Open the archive
+            $zip = new ZipArchive();
+            if (!$zip->open($task['archive_path'], ZipArchive::CREATE)) {
+                return new WP_Error('archive_error', 'Error opening the archive.', array('status' => 500));
+            }
+
+            // Process a batch of files
+            $files = array_slice($task['files'], $task['progress'], self::FILES_PER_BATCH);
+            foreach ($files as $file) {
+                // Add the file to the archive
+                $local_path = substr($file, strlen(ABSPATH)); // Compute the relative path of the file
+                $zip->addFile($file, $local_path);
+            }
+
+
+            // Update the task progress
+            $task['progress'] += count($files);
+            if ($task['progress'] >= count($task['files'])) {
+                $task['completed'] = true;
+            }
+            update_option("local_copycat_task_$task_id", $task);
+
+            // Close the archive
+            $zip->close();
+
+            // Return a response
+            return new WP_REST_Response(array('status' => 'success', 'message' => 'Archive task in progress.', 'task' => $task), 200);
+        } catch (\Exception $e) {
+            // Renvoyer une erreur avec le message d'exception
+            return new WP_Error('unexpected_error', $e->getMessage(), array('status' => 500));
         }
 
-        // Check if the task is already completed
-        if ($task['completed']) {
-            return new WP_Error('task_already_completed', 'The task is already completed.', array('status' => 409));
-        }
-
-        // Perform the archive task
-        // Open the archive
-        $zip = new ZipArchive();
-        if (!$zip->open($task['archive_path'], ZipArchive::CREATE)) {
-            return new WP_Error('archive_error', 'Error opening the archive.', array('status' => 500));
-        }
-
-        // Process a batch of files
-        $files = array_slice($task['files'], $task['progress'], self::FILES_PER_BATCH);
-        foreach ($files as $file) {
-            // Add the file to the archive
-            $local_path = substr($file, strlen(ABSPATH)); // Compute the relative path of the file
-            $zip->addFile($file, $local_path);
-        }
-
-
-        // Update the task progress
-        $task['progress'] += count($files);
-        if ($task['progress'] >= count($task['files'])) {
-            $task['completed'] = true;
-        }
-        update_option("local_copycat_task_$task_id", $task);
-
-        // Close the archive
-        $zip->close();
-
-        // Return a response
-        return new WP_REST_Response(array('status' => 'success', 'message' => 'Archive task in progress.', 'task' => $task), 200);
     }
 
 
