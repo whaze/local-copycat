@@ -374,6 +374,9 @@ class LocalCopyCat
         } catch (\Exception $e) {
             // Renvoyer une erreur avec le message d'exception
             return new WP_Error('unexpected_error', $e->getMessage(), array('status' => 500));
+        } catch (\Error $e) {
+            // Renvoyer une erreur avec le message d'erreur
+            return new WP_Error('unexpected_error', $e->getMessage(), array('status' => 500));
         }
 
     }
