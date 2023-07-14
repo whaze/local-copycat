@@ -1,6 +1,6 @@
 import {__} from '@wordpress/i18n';
 import {useEffect, useState, createRoot} from '@wordpress/element';
-import {Button, PanelBody, Panel, PanelRow, Spinner, ToggleControl} from '@wordpress/components';
+import {Button, PanelBody, Panel, PanelRow, Spinner, ToggleControl, Notice} from '@wordpress/components';
 import {info} from '@wordpress/icons';
 import apiFetch from '@wordpress/api-fetch';
 import './admin.scss';
@@ -15,6 +15,7 @@ const LocalCopyCatAdmin = () => {
     const [downloadUrl, setDownloadUrl] = useState(null);
     const [allowedRoles, setAllowedRoles] = useState([]);
     const [availableRoles, setAvailableRoles] = useState([]);
+    const [notice, setNotice] = useState(null);
 
     const fetchAllowedRoles = async () => {
         try {
@@ -23,6 +24,10 @@ const LocalCopyCatAdmin = () => {
             setIsLoadingAllowedRoles(false);
         } catch (error) {
             console.error('Error fetching allowed roles:', error);
+            setNotice({
+                status: 'error',
+                message: __('Une erreur est survenue lors de la récupération des rôles autorisés.', 'local-copycat'),
+            });
         }
 
     };
@@ -94,8 +99,13 @@ const LocalCopyCatAdmin = () => {
         }
     };
 
+    const resetNotice = () => {
+        setNotice(null);
+    };
+
     return (
         <>
+            {notice && <Notice status={notice.status} isDismissible={true} onDismiss={resetNotice}>{notice.message}</Notice>}
             <Panel header={__('Réglages', 'local-copycat')}>
                 <PanelBody title={__('Fichiers exportés', 'local-copycat')} icon={info} initialOpen={true}>
                     <PanelRow>
