@@ -17,6 +17,8 @@ const LocalCopyCatAdmin = () => {
     const [availableRoles, setAvailableRoles] = useState([]);
     const [notice, setNotice] = useState(null);
     const [downloadEnabled, setDownloadEnabled] = useState(false);
+    const [archives, setArchives] = useState([]);
+
 
     const fetchAllowedRoles = async () => {
         try {
@@ -48,9 +50,48 @@ const LocalCopyCatAdmin = () => {
 
     }
 
+    const fetchArchives = async () => {
+        try {
+            const response = await apiFetch({path: '/local-copycat/v1/archives'});
+            setArchives(response);
+        } catch (error) {
+            console.error('Error fetching archives:', error);
+            setNotice({
+                status: 'error',
+                message: __('Une erreur est survenue lors de la récupération des archives.', 'local-copycat'),
+            });
+        }
+    };
+
+    const deleteArchive = async (archiveId) => {
+        console.log('Deleting archive:', archiveId);
+        try {
+            await apiFetch({
+                path: `/local-copycat/v1/archives/${archiveId}`,
+                method: 'DELETE',
+            });
+
+            setNotice({
+                status: 'success',
+                message: __('L\'archive a été supprimée avec succès.', 'local-copycat'),
+            });
+
+            // Refresh the archives list
+            fetchArchives();
+        } catch (error) {
+            console.error('Error deleting archive:', error);
+            setNotice({
+                status: 'error',
+                message: __('Une erreur est survenue lors de la suppression de l\'archive.', 'local-copycat'),
+            });
+        }
+    };
+
+
     useEffect(() => {
         fetchAvailableRoles();
         fetchAllowedRoles();
+        fetchArchives();
     }, []);
 
     useEffect(() => {
@@ -112,30 +153,11 @@ const LocalCopyCatAdmin = () => {
         console.log('Selected Files:', selectedFiles);
 
         try {
-            /*const data = await apiFetch({
-                path: `/local-copycat/v1/download-archive?include_theme=${includeTheme}&include_plugin=${includePlugin}&include_media=${includeMedia}`,
-                method: 'GET'
-            });*/
             const data = await apiFetch({
                 path: `/local-copycat/v1/create-archive-task?include_theme=${includeTheme}&include_plugin=${includePlugin}&include_media=${includeMedia}`,
                 method: 'GET'
             });
 
-            console.log(data);
-            /*if (data.archive_id) {
-                // Download the archive using the new REST route
-                window.location.href = `/wp-json/local-copycat/v1/download-archive/${data.archive_id}`;
-                setNotice({
-                    status: 'success',
-                    message: __('Le téléchargement des fichiers a commencé.', 'local-copycat'),
-                });
-            } else {
-                console.error('Archive ID not found.');
-                setNotice({
-                    status: 'error',
-                    message: __('ID de l\'archive non trouvé.', 'local-copycat'),
-                });
-            }*/
             if (data.task_id) {
                 // Start the download process with the new task ID
                 console.log('Task ID:', data.task_id);
@@ -172,6 +194,7 @@ const LocalCopyCatAdmin = () => {
                 });
                 setDownloadEnabled(true);
                 setDownloadUrl(`/wp-json/local-copycat/v1/download-archive/${taskId}`);
+                fetchArchives();
             } else {
                 setNotice({
                     status: 'success',
@@ -231,6 +254,32 @@ const LocalCopyCatAdmin = () => {
                             {__('Télécharger l\'archive', 'local-copycat')}
                         </Button>
                     </PanelRow>
+                </PanelBody>
+
+                <PanelBody title={__('Archives disponibles', 'local-copycat')} initialOpen={true}
+                           className="archive_list">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Path</th>
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {archives.map((archive) => (
+                            <tr key={archive.id}>
+                                <td>{archive.id}</td>
+                                <td>{archive.path}</td>
+                                <td>
+                                    <Button isDestructive onClick={() => deleteArchive(archive.id)}>
+                                        {__('Supprimer', 'local-copycat')}
+                                    </Button>
+                                </td>
+                            </tr>
+                        ))}
+                        </tbody>
+                    </table>
                 </PanelBody>
 
                 <PanelBody title={__('Rôles authorisés', 'local-copycat')} initialOpen={true}>
