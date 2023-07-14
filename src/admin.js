@@ -111,13 +111,17 @@ const LocalCopyCatAdmin = () => {
         console.log('Selected Files:', selectedFiles);
 
         try {
-            const data = await apiFetch({
+            /*const data = await apiFetch({
                 path: `/local-copycat/v1/download-archive?include_theme=${includeTheme}&include_plugin=${includePlugin}&include_media=${includeMedia}`,
+                method: 'GET'
+            });*/
+            const data = await apiFetch({
+                path: `/local-copycat/v1/create-archive-task?include_theme=${includeTheme}&include_plugin=${includePlugin}&include_media=${includeMedia}`,
                 method: 'GET'
             });
 
             console.log(data);
-            if (data.archive_id) {
+            /*if (data.archive_id) {
                 // Download the archive using the new REST route
                 window.location.href = `/wp-json/local-copycat/v1/download-archive/${data.archive_id}`;
                 setNotice({
@@ -130,6 +134,18 @@ const LocalCopyCatAdmin = () => {
                     status: 'error',
                     message: __('ID de l\'archive non trouvé.', 'local-copycat'),
                 });
+            }*/
+            if (data.task_id) {
+                // Start the download process with the new task ID
+                console.log('Task ID:', data.task_id);
+                performArchiveTask(data.task_id);
+
+            } else {
+                console.error('Task ID not found.');
+                setNotice({
+                    status: 'error',
+                    message: __('ID de la tâche non trouvé.', 'local-copycat'),
+                });
             }
         } catch (error) {
             console.error('Error fetching archive ID:', error);
@@ -139,6 +155,28 @@ const LocalCopyCatAdmin = () => {
             });
         }
     };
+
+    const performArchiveTask = async (taskId) => {
+        try {
+            await apiFetch({
+                path: `/local-copycat/v1/perform-archive-task`,
+                method: 'POST',
+                data: {task_id: taskId},
+            });
+
+            setNotice({
+                status: 'success',
+                message: __('La tâche d\'archivage a commencé.', 'local-copycat'),
+            });
+        } catch (error) {
+            console.error('Error performing archive task:', error);
+            setNotice({
+                status: 'error',
+                message: __('Une erreur est survenue lors de la tâche d\'archivage.', 'local-copycat'),
+            });
+        }
+    };
+
 
     const resetNotice = () => {
         setNotice(null);

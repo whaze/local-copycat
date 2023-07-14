@@ -58,7 +58,7 @@ class LocalCopyCat
      */
     public function register_rest_routes()
     {
-        register_rest_route(
+        /*register_rest_route(
             'local-copycat/v1',
             '/download-archive',
             array(
@@ -82,6 +82,52 @@ class LocalCopyCat
                         'type' => 'boolean',
                         'default' => true,
                         'sanitize_callback' => 'rest_sanitize_boolean',
+                        'validate_callback' => 'rest_validate_request_arg',
+                    ),
+                ),
+            )
+        );*/
+        register_rest_route(
+            'local-copycat/v1',
+            '/create-archive-task',
+            array(
+                'methods' => 'GET',
+                'callback' => array($this, 'create_archive_task'),
+                'permission_callback' => array($this, 'check_user_permission'),
+                'args' => array(
+                    'include_theme' => array(
+                        'type' => 'boolean',
+                        'default' => true,
+                        'sanitize_callback' => 'rest_sanitize_boolean',
+                        'validate_callback' => 'rest_validate_request_arg',
+                    ),
+                    'include_plugin' => array(
+                        'type' => 'boolean',
+                        'default' => true,
+                        'sanitize_callback' => 'rest_sanitize_boolean',
+                        'validate_callback' => 'rest_validate_request_arg',
+                    ),
+                    'include_media' => array(
+                        'type' => 'boolean',
+                        'default' => true,
+                        'sanitize_callback' => 'rest_sanitize_boolean',
+                        'validate_callback' => 'rest_validate_request_arg',
+                    ),
+                ),
+            )
+        );
+        register_rest_route(
+            'local-copycat/v1',
+            '/perform-archive-task',
+            array(
+                'methods' => 'POST',
+                'callback' => array($this, 'perform_archive_task'),
+                'permission_callback' => array($this, 'check_user_permission'),
+                'args' => array(
+                    'task_id' => array(
+                        'required' => true,
+                        'type' => 'string',
+                        'sanitize_callback' => 'sanitize_text_field',
                         'validate_callback' => 'rest_validate_request_arg',
                     ),
                 ),
@@ -227,6 +273,81 @@ class LocalCopyCat
 
         echo '</div>';
     }
+
+    public function create_archive_task(WP_REST_Request $request): WP_REST_Response
+    {
+        $this->include_themes = $request->get_param('include_theme');
+        $this->include_plugins = $request->get_param('include_plugin');
+        $this->include_media = $request->get_param('include_media');
+
+        $files = [];
+
+        // Add themes files to the task
+        if ($this->include_themes) {
+            $files = array_merge($files, $this->get_files(WP_CONTENT_DIR . '/themes'));
+        }
+
+        // Add plugins files to the task
+        if ($this->include_plugins) {
+            $files = array_merge($files, $this->get_files(WP_PLUGIN_DIR));
+        }
+
+        // Add media files to the task
+        if ($this->include_media) {
+            $files = array_merge($files, $this->get_files(WP_CONTENT_DIR . '/uploads'));
+        }
+
+        // Generate a unique ID for the task
+        $task_id = wp_generate_uuid4();
+
+        // Store the task in the options table
+        update_option("local_copycat_task_$task_id", $files);
+
+        // Return the task ID
+        return new WP_REST_Response(array('task_id' => $task_id), 200);
+    }
+
+    private function get_files(string $folder): array
+    {
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($folder, RecursiveDirectoryIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::SELF_FIRST
+        );
+
+        $files = [];
+
+        foreach ($iterator as $file) {
+            if ($file->isFile()) {
+                $files[] = $file->getPathname();
+            }
+        }
+
+        return $files;
+    }
+
+    public function perform_archive_task(WP_REST_Request $request)
+    {
+        $task_id = $request->get_param('task_id');
+
+        // Retrieve the task data
+        $task = get_option("local_copycat_task_$task_id");
+
+        if (!$task) {
+            return new WP_Error('task_not_found', 'Task not found.', array('status' => 404));
+        }
+
+        // Check if the task is already completed
+        if ($task['completed']) {
+            return new WP_Error('task_already_completed', 'The task is already completed.', array('status' => 409));
+        }
+
+        // Perform the archive task
+        // We will implement this in the next steps
+
+        // Return a response
+        return new WP_REST_Response(array('status' => 'success', 'message' => 'Archive task started.'), 200);
+    }
+
 
     /**
      * Download the ZIP archive with selected files.
