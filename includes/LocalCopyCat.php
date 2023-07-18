@@ -45,6 +45,17 @@ class LocalCopyCat
             true
         );
 
+	    $nonce = wp_create_nonce('wp_rest');
+
+	    // Localize the script with new data
+	    wp_localize_script(
+		    'local-copycat-admin',
+		    'local_copycat_admin',
+		    array(
+			    'nonce' => $nonce
+		    )
+	    );
+
         // Enqueue admin styles
         wp_enqueue_style(
             'local-copycat-admin-styles',
@@ -149,13 +160,12 @@ class LocalCopyCat
 
         register_rest_route(
             'local-copycat/v1',
-            '/archives/(?P<id>[a-zA-Z0-9]+)',
+            '/archives/(?P<id>[a-zA-Z0-9\-]+)',
 
             array(
-                'methods' => 'DELETE',
+	            'methods' => 'POST',
                 'callback' => array($this, 'delete_archive'),
-//                'permission_callback' => array($this, 'check_user_permission'),
-                'permission_callback' => '__return_true',
+                'permission_callback' => array($this, 'check_user_permission'),
                 'args' => array(
                     'id' => array(
                         'required' => true,
@@ -169,12 +179,11 @@ class LocalCopyCat
 
         register_rest_route(
             'local-copycat/v1',
-            '/download-archive/(?P<id>[a-zA-Z0-9]+)',
+            '/download-archive/(?P<id>[a-zA-Z0-9\-]+)',
             array(
                 'methods' => 'GET',
                 'callback' => array($this, 'serve_archive'),
-//                'permission_callback' => array($this, 'check_user_permission'),
-            'permission_callback' => '__return_true',
+                'permission_callback' => array($this, 'check_user_permission'),
                 'args' => array(
                     'id' => array(
                         'required' => true,

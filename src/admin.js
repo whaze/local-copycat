@@ -18,6 +18,7 @@ const LocalCopyCatAdmin = () => {
     const [notice, setNotice] = useState(null);
     const [downloadEnabled, setDownloadEnabled] = useState(false);
     const [archives, setArchives] = useState([]);
+    const {nonce} = local_copycat_admin;
 
 
     const fetchAllowedRoles = async () => {
@@ -68,7 +69,10 @@ const LocalCopyCatAdmin = () => {
         try {
             await apiFetch({
                 path: `/local-copycat/v1/archives/${archiveId}`,
-                method: 'DELETE',
+                method: 'POST',
+                headers: {
+                    'X-WP-Nonce': nonce,
+                },
             });
 
             setNotice({
@@ -256,7 +260,7 @@ const LocalCopyCatAdmin = () => {
                     </PanelRow>
                 </PanelBody>
 
-                <PanelBody title={__('Archives disponibles', 'local-copycat')} initialOpen={true}
+                <PanelBody title={__('Archives disponibles', 'local-copycat')} initialOpen={false}
                            className="archive_list">
                     <table>
                         <thead>
@@ -282,7 +286,7 @@ const LocalCopyCatAdmin = () => {
                     </table>
                 </PanelBody>
 
-                <PanelBody title={__('Rôles authorisés', 'local-copycat')} initialOpen={true}>
+                <PanelBody title={__('Rôles autorisés', 'local-copycat')} initialOpen={false}>
                     {isLoadingAvailableRoles ? <Spinner/> : availableRoles.map((role) => (
                         <PanelRow key={role.slug}>
                             <ToggleControl label={role.name}

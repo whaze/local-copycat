@@ -7,6 +7,7 @@ Version: 1.0.0
 Author: Whaze
 Author URI: https://jeromebuquet.com/
 License: GPL2
+Domain Name: local-copycat
 */
 
 // Charger l'autoloader
