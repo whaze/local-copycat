@@ -63,6 +63,9 @@ class LocalCopyCat
             array(),
             '1.0.0'
         );
+
+	    wp_enqueue_style('wp-components');
+//	    wp_enqueue_style('wp-block-editor');
     }
 
     /**
@@ -277,7 +280,7 @@ class LocalCopyCat
             'manage_options',
             'local-copycat-admin',
             array($this, 'render_admin_page'),
-            'dashicons-admin-generic',
+            'dashicons-podio',
             90
         );
     }
