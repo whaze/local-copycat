@@ -1,7 +1,7 @@
 import {__} from '@wordpress/i18n';
 import {useEffect, useState, createRoot} from '@wordpress/element';
 import {Button, PanelBody, Panel, PanelRow, Spinner, ToggleControl, Notice} from '@wordpress/components';
-import {info} from '@wordpress/icons';
+import {info, archive, people} from '@wordpress/icons';
 import apiFetch from '@wordpress/api-fetch';
 import './admin.scss';
 
@@ -260,7 +260,7 @@ const LocalCopyCatAdmin = () => {
                     </PanelRow>
                 </PanelBody>
 
-                <PanelBody title={__('Archives disponibles', 'local-copycat')} initialOpen={false}
+                <PanelBody title={__('Archives disponibles', 'local-copycat')} icon={archive} initialOpen={false}
                            className="archive_list">
                     <table>
                         <thead>
@@ -286,7 +286,7 @@ const LocalCopyCatAdmin = () => {
                     </table>
                 </PanelBody>
 
-                <PanelBody title={__('Rôles autorisés', 'local-copycat')} initialOpen={false}>
+                <PanelBody title={__('Rôles autorisés', 'local-copycat')} icon={people} initialOpen={false}>
                     {isLoadingAvailableRoles ? <Spinner/> : availableRoles.map((role) => (
                         <PanelRow key={role.slug}>
                             <ToggleControl label={role.name}
