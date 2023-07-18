@@ -231,80 +231,81 @@ const LocalCopyCatAdmin = () => {
                     )}
                 </Animate>
             }
-            <Panel header={__('Réglages', 'local-copycat')}>
-                <PanelBody title={__('Fichiers exportés', 'local-copycat')} icon={info} initialOpen={true}>
-                    <PanelRow>
-                        <ToggleControl
-                            label={__('Inclure le thème', 'local-copycat')}
-                            checked={includeTheme}
-                            onChange={setIncludeTheme}
-                        />
-                    </PanelRow>
-                    <PanelRow>
-                        <ToggleControl
-                            label={__('Inclure les plugins', 'local-copycat')}
-                            checked={includePlugin}
-                            onChange={setIncludePlugin}
-                        />
-                    </PanelRow>
-                    <PanelRow>
-                        <ToggleControl
-                            label={__('Inclure les médias', 'local-copycat')}
-                            checked={includeMedia}
-                            onChange={setIncludeMedia}
-                        />
-                    </PanelRow>
-                    <PanelRow>
-                        <Button isPrimary onClick={handleAction}>
-                            {__('Créer une archive', 'local-copycat')}
-                        </Button>
-                    </PanelRow>
-                    <PanelRow>
-                        <Button isPrimary onClick={() => window.location.href = downloadUrl} disabled={!downloadUrl}>
-                            {__('Télécharger l\'archive', 'local-copycat')}
-                        </Button>
-                    </PanelRow>
-                </PanelBody>
-
-                <PanelBody title={__('Archives disponibles', 'local-copycat')} icon={archive} initialOpen={false}
-                           className="archive_list">
-                    <table>
-                        <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Path</th>
-                            <th>Actions</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {archives.map((archive) => (
-                            <tr key={archive.id}>
-                                <td>{archive.id}</td>
-                                <td>{archive.path}</td>
-                                <td>
-                                    <Button isDestructive onClick={() => deleteArchive(archive.id)}>
-                                        {__('Supprimer', 'local-copycat')}
-                                    </Button>
-                                </td>
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
-                </PanelBody>
-
-                <PanelBody title={__('Rôles autorisés', 'local-copycat')} icon={people} initialOpen={false}>
-                    {isLoadingAvailableRoles ? <Spinner/> : availableRoles.map((role) => (
-                        <PanelRow key={role.slug}>
-                            <ToggleControl label={role.name}
-                                           onChange={() => handleToggleRole(role.slug, !allowedRoles.includes(role.slug))}
-                                           checked={allowedRoles.includes(role.slug)}
-                                           disabled={role.slug === 'administrator'}
+                <Panel header={__('Réglages', 'local-copycat')}>
+                    <PanelBody title={__('Fichiers exportés', 'local-copycat')} icon={info} initialOpen={true}>
+                        <PanelRow>
+                            <ToggleControl
+                                label={__('Inclure le thème', 'local-copycat')}
+                                checked={includeTheme}
+                                onChange={setIncludeTheme}
                             />
                         </PanelRow>
-                    ))}
-                </PanelBody>
+                        <PanelRow>
+                            <ToggleControl
+                                label={__('Inclure les plugins', 'local-copycat')}
+                                checked={includePlugin}
+                                onChange={setIncludePlugin}
+                            />
+                        </PanelRow>
+                        <PanelRow>
+                            <ToggleControl
+                                label={__('Inclure les médias', 'local-copycat')}
+                                checked={includeMedia}
+                                onChange={setIncludeMedia}
+                            />
+                        </PanelRow>
+                        <PanelRow>
+                            <Button isPrimary onClick={handleAction}>
+                                {__('Créer une archive', 'local-copycat')}
+                            </Button>
+                        </PanelRow>
+                        <PanelRow>
+                            <Button isPrimary onClick={() => window.location.href = downloadUrl}
+                                    disabled={!downloadUrl}>
+                                {__('Télécharger l\'archive', 'local-copycat')}
+                            </Button>
+                        </PanelRow>
+                    </PanelBody>
 
-            </Panel>
+                    <PanelBody title={__('Archives disponibles', 'local-copycat')} icon={archive} initialOpen={false}
+                               className="archive_list">
+                        <table>
+                            <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Path</th>
+                                <th>Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {archives.map((archive) => (
+                                <tr key={archive.id}>
+                                    <td>{archive.id}</td>
+                                    <td>{archive.path}</td>
+                                    <td>
+                                        <Button isDestructive onClick={() => deleteArchive(archive.id)}>
+                                            {__('Supprimer', 'local-copycat')}
+                                        </Button>
+                                    </td>
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+                    </PanelBody>
+
+                    <PanelBody title={__('Rôles autorisés', 'local-copycat')} icon={people} initialOpen={false}>
+                        {isLoadingAvailableRoles ? <Spinner/> : availableRoles.map((role) => (
+                            <PanelRow key={role.slug}>
+                                <ToggleControl label={role.name}
+                                               onChange={() => handleToggleRole(role.slug, !allowedRoles.includes(role.slug))}
+                                               checked={allowedRoles.includes(role.slug)}
+                                               disabled={role.slug === 'administrator'}
+                                />
+                            </PanelRow>
+                        ))}
+                    </PanelBody>
+
+                </Panel>
         </>
     );
 };
