@@ -1,3 +1,5 @@
+@import 'react-toastify/dist/ReactToastify.min.css';
+
 @charset "UTF-8";
 
 $color_1: white;
@@ -28,4 +30,6 @@ $background-color_1: #007cba;
   }
 }
 
-
+.localcopycat-toast{
+  top: 32px !important;
+}
