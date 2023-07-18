@@ -1,6 +1,6 @@
 import {__} from '@wordpress/i18n';
 import {useEffect, useState, createRoot} from '@wordpress/element';
-import {Button, PanelBody, Panel, PanelRow, Spinner, ToggleControl, Notice} from '@wordpress/components';
+import {Button, PanelBody, Panel, PanelRow, Spinner, ToggleControl, Notice, Animate} from '@wordpress/components';
 import {info, archive, people} from '@wordpress/icons';
 import apiFetch from '@wordpress/api-fetch';
 import './admin.scss';
@@ -224,7 +224,13 @@ const LocalCopyCatAdmin = () => {
     return (
         <>
             {notice &&
-                <Notice status={notice.status} isDismissible={true} onDismiss={resetNotice}>{notice.message}</Notice>}
+                <Animate type="slide-in">
+                    {({className}) => (
+                        <Notice className={className} status={notice.status} isDismissible={true}
+                                onDismiss={resetNotice}>{notice.message}</Notice>
+                    )}
+                </Animate>
+            }
             <Panel header={__('Réglages', 'local-copycat')}>
                 <PanelBody title={__('Fichiers exportés', 'local-copycat')} icon={info} initialOpen={true}>
                     <PanelRow>
