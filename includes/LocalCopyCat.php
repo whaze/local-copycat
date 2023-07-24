@@ -49,7 +49,7 @@ class LocalCopyCat {
 			'local-copycat-admin',
 			'local_copycat_admin',
 			array(
-				'nonce' => $nonce
+				'nonce' => $nonce,
 			)
 		);
 
@@ -62,7 +62,7 @@ class LocalCopyCat {
 		);
 
 		wp_enqueue_style( 'wp-components' );
-//	    wp_enqueue_style('wp-block-editor');
+		// wp_enqueue_style('wp-block-editor');
 	}
 
 	/**
@@ -160,7 +160,6 @@ class LocalCopyCat {
 		register_rest_route(
 			'local-copycat/v1',
 			'/archives/(?P<id>[a-zA-Z0-9\-]+)',
-
 			array(
 				'methods'             => 'POST',
 				'callback'            => array( $this, 'delete_archive' ),
@@ -193,7 +192,6 @@ class LocalCopyCat {
 				),
 			)
 		);
-
 	}
 
 	/**
@@ -222,15 +220,16 @@ class LocalCopyCat {
 				array( 'status' => 403 )
 			);
 		}
-
 	}
 
 	public function get_available_roles() {
 		$roles = array();
 		foreach ( wp_roles()->roles as $role => $details ) {
-			$roles[] = [ 'slug' => $role, 'name' => $details['name'] ];
+			$roles[] = array(
+				'slug' => $role,
+				'name' => $details['name'],
+			);
 		}
-
 
 		return $roles;
 	}
@@ -295,7 +294,7 @@ class LocalCopyCat {
 		$this->include_media   = $request->get_param( 'include_media' );
 
 		// Prepare the files
-		$files = [];
+		$files = array();
 
 		// Add themes files to the task
 		if ( $this->include_themes ) {
@@ -321,7 +320,7 @@ class LocalCopyCat {
 
 		// Create a new archive task
 		$upload_dir  = wp_upload_dir();
-		$archive_dir = $upload_dir['basedir'] . "/local-copycat";
+		$archive_dir = $upload_dir['basedir'] . '/local-copycat';
 
 		// Create the directory if it doesn't exist
 		if ( ! file_exists( $archive_dir ) ) {
@@ -349,7 +348,7 @@ class LocalCopyCat {
 			RecursiveIteratorIterator::SELF_FIRST
 		);
 
-		$files = [];
+		$files = array();
 
 		foreach ( $iterator as $file ) {
 			if ( $file->isFile() ) {
@@ -390,7 +389,6 @@ class LocalCopyCat {
 				$zip->addFile( $file, $file );
 			}
 
-
 			// Update the task progress
 			$task['progress'] += count( $files );
 			if ( $task['progress'] >= count( $task['files'] ) ) {
@@ -404,10 +402,14 @@ class LocalCopyCat {
 			$zip->close();
 
 			// Return a response
-			return new WP_REST_Response( array( 'status'  => 'success',
-			                                    'message' => 'Archive task in progress.',
-			                                    'task'    => $task
-			), 200 );
+			return new WP_REST_Response(
+				array(
+					'status'  => 'success',
+					'message' => 'Archive task in progress.',
+					'task'    => $task,
+				),
+				200
+			);
 		} catch ( \Exception $e ) {
 			// Renvoyer une erreur avec le message d'exception
 			return new WP_Error( 'unexpected_error', $e->getMessage(), array( 'status' => 500 ) );
@@ -415,7 +417,6 @@ class LocalCopyCat {
 			// Renvoyer une erreur avec le message d'erreur
 			return new WP_Error( 'unexpected_error', $e->getMessage(), array( 'status' => 500 ) );
 		}
-
 	}
 
 	public function serve_archive( WP_REST_Request $request ) {
@@ -445,7 +446,7 @@ class LocalCopyCat {
 	/**
 	 * Add a folder to the ZIP archive recursively.
 	 *
-	 * @param string $folder The folder path.
+	 * @param string     $folder The folder path.
 	 * @param ZipArchive $zip The ZipArchive object.
 	 */
 	private function add_folder_to_archive( string $folder, ZipArchive $zip ) {
@@ -473,12 +474,15 @@ class LocalCopyCat {
 			die( $wpdb->last_error );
 		}
 		// Format the results
-		$archives = array_map( function ( $option ) {
-			return array(
-				'id'   => str_replace( 'local_copycat_archive_', '', $option['option_name'] ),
-				'path' => $option['option_value'],
-			);
-		}, $options );
+		$archives = array_map(
+			function ( $option ) {
+				return array(
+					'id'   => str_replace( 'local_copycat_archive_', '', $option['option_name'] ),
+					'path' => $option['option_value'],
+				);
+			},
+			$options
+		);
 
 		return $archives;
 	}
@@ -498,7 +502,9 @@ class LocalCopyCat {
 		unlink( $archive_path );
 		delete_option( "local_copycat_archive_$archive_id" );
 
-		return array( 'status' => 'success', 'message' => 'Archive deleted.' );
+		return array(
+			'status'  => 'success',
+			'message' => 'Archive deleted.',
+		);
 	}
-
 }
