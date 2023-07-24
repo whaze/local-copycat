@@ -12,5 +12,20 @@
     "psr-4": {
       "LocalCopyCat\\": "includes/"
     }
+  },
+  "scripts": {
+    "lint:php": "phpcs -p --standard=WordPress --ignore=vendor/*,node_modules/* --extensions=php .",
+    "fix:php": "phpcbf -p --standard=WordPress --ignore=vendor/*,node_modules/* --extensions=php ."
+  },
+  "require-dev": {
+    "squizlabs/php_codesniffer": "^3.7",
+    "wp-coding-standards/wpcs": "dev-develop",
+    "dealerdirect/phpcodesniffer-composer-installer": "^1.0",
+    "phpcompatibility/phpcompatibility-wp": "^2.1"
+  },
+  "config": {
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true
+    }
   }
 }
