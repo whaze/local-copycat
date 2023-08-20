@@ -12,10 +12,8 @@ const LocalCopyCatAdmin = () => {
     const [includeTheme, setIncludeTheme] = useState(true);
     const [includePlugin, setIncludePlugin] = useState(false);
     const [includeMedia, setIncludeMedia] = useState(false);
-    const [downloadUrl, setDownloadUrl] = useState(null);
     const [allowedRoles, setAllowedRoles] = useState([]);
     const [availableRoles, setAvailableRoles] = useState([]);
-    const [downloadEnabled, setDownloadEnabled] = useState(false);
     const [archives, setArchives] = useState([]);
     const {nonce} = local_copycat_admin;
 
@@ -156,8 +154,6 @@ const LocalCopyCatAdmin = () => {
 
             if (response.task.completed) {
                 toast.success(__('L\'archivage est terminé.', 'local-copycat'));
-                setDownloadEnabled(true);
-                setDownloadUrl(`/wp-json/local-copycat/v1/download-archive/${taskId}`);
                 fetchArchives();
             } else {
                 toast.success(__('Archivage en cours...', 'local-copycat'));
@@ -202,12 +198,6 @@ const LocalCopyCatAdmin = () => {
                             {__('Créer une archive', 'local-copycat')}
                         </Button>
                     </PanelRow>
-                    <PanelRow>
-                        <Button isPrimary onClick={() => window.location.href = downloadUrl}
-                                disabled={!downloadUrl}>
-                            {__('Télécharger l\'archive', 'local-copycat')}
-                        </Button>
-                    </PanelRow>
                 </PanelBody>
 
                 <PanelBody title={__('Archives disponibles', 'local-copycat')} icon={archive} initialOpen={true}
@@ -228,6 +218,11 @@ const LocalCopyCatAdmin = () => {
                                 <td>
                                     <Button isDestructive onClick={() => deleteArchive(archive.id)}>
                                         {__('Supprimer', 'local-copycat')}
+                                    </Button>
+                                    <Button isPrimary
+                                        onClick={() => window.location.href = `/wp-json/local-copycat/v1/download-archive/${archive.id}`}
+                                    >
+                                        {__('Télécharger', 'local-copycat')}
                                     </Button>
                                 </td>
                             </tr>

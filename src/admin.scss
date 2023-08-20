@@ -26,10 +26,16 @@ $background-color_1: #007cba;
       border: 1px solid #ddd;
       padding: 8px;
       text-align: left;
+
+      &:last-child {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+      }
     }
   }
 }
 
-.localcopycat-toast{
+.localcopycat-toast {
   top: 32px !important;
 }
