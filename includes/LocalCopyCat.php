@@ -333,6 +333,7 @@ class LocalCopyCat {
 			'archive_path' => "$archive_dir/$task_id.zip",
 			'progress'     => 0,
 			'completed'    => false,
+			'creationDate' => date('Y-m-d H:i:s'),
 		);
 
 		// Store the task in the options table
@@ -446,7 +447,7 @@ class LocalCopyCat {
 	/**
 	 * Add a folder to the ZIP archive recursively.
 	 *
-	 * @param string     $folder The folder path.
+	 * @param string $folder The folder path.
 	 * @param ZipArchive $zip The ZipArchive object.
 	 */
 	private function add_folder_to_archive( string $folder, ZipArchive $zip ) {
@@ -476,9 +477,13 @@ class LocalCopyCat {
 		// Format the results
 		$archives = array_map(
 			function ( $option ) {
+				$archiveId    = str_replace( 'local_copycat_archive_', '', $option['option_name'] );
+				$creationDate = get_option( "local_copycat_task_$archiveId" )['creationDate'];
+
 				return array(
-					'id'   => str_replace( 'local_copycat_archive_', '', $option['option_name'] ),
-					'path' => $option['option_value'],
+					'id'           => $archiveId,
+					'path'         => $option['option_value'],
+					'creationDate' => $creationDate,
 				);
 			},
 			$options

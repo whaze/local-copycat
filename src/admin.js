@@ -207,6 +207,7 @@ const LocalCopyCatAdmin = () => {
                         <tr>
                             <th>ID</th>
                             <th>Path</th>
+                            <th>Creation date</th>
                             <th>Actions</th>
                         </tr>
                         </thead>
@@ -215,6 +216,7 @@ const LocalCopyCatAdmin = () => {
                             <tr key={archive.id}>
                                 <td>{archive.id}</td>
                                 <td>{archive.path}</td>
+                                <td>{new Date(archive.creationDate).toLocaleString()}</td>
                                 <td>
                                     <Button isDestructive onClick={() => deleteArchive(archive.id)}>
                                         {__('Supprimer', 'local-copycat')}
