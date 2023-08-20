@@ -47,7 +47,9 @@ const LocalCopyCatAdmin = () => {
     const fetchArchives = async () => {
         try {
             const response = await apiFetch({path: '/local-copycat/v1/archives'});
-            setArchives(response);
+            // Sort the archives by creationDate in descending order
+            const sortedArchives = response.sort((a, b) => new Date(b.creationDate) - new Date(a.creationDate));
+            setArchives(sortedArchives);
         } catch (error) {
             console.error('Error fetching archives:', error);
             toast.error(__('Une erreur est survenue lors de la récupération des archives.', 'local-copycat'));
@@ -222,7 +224,7 @@ const LocalCopyCatAdmin = () => {
                                         {__('Supprimer', 'local-copycat')}
                                     </Button>
                                     <Button isPrimary
-                                        onClick={() => window.location.href = `/wp-json/local-copycat/v1/download-archive/${archive.id}`}
+                                            onClick={() => window.location.href = `/wp-json/local-copycat/v1/download-archive/${archive.id}`}
                                     >
                                         {__('Télécharger', 'local-copycat')}
                                     </Button>
