@@ -146,6 +146,34 @@ const LocalCopyCatAdmin = () => {
         }
     };
 
+    const handleActionRefacto = async () => {
+        const selectedFiles = [];
+
+        if (includeTheme) {
+            selectedFiles.push('theme');
+        }
+
+        if (includePlugin) {
+            selectedFiles.push('plugin');
+        }
+
+        if (includeMedia) {
+            selectedFiles.push('media');
+        }
+
+        console.log('Selected Files:', selectedFiles);
+
+        try {
+            const API_BASE_URL = '/wp-json/local-copycat/v1';
+            const queryString = `include_theme=${encodeURIComponent(includeTheme)}&include_plugin=${encodeURIComponent(includePlugin)}&include_media=${encodeURIComponent(includeMedia)}`;
+            const downloadUrl = `${API_BASE_URL}/create-download-archive?${queryString}`;
+            window.location.href = downloadUrl;
+        } catch (error) {
+            console.error('Error while downloading:', error);
+            toast.error(__('Une erreur est survenue lors du téléchargement', 'local-copycat'));
+        }
+    };
+
     const performArchiveTask = async (taskId) => {
         try {
             const response = await apiFetch({
@@ -198,6 +226,11 @@ const LocalCopyCatAdmin = () => {
                     <PanelRow>
                         <Button isPrimary onClick={handleAction}>
                             {__('Créer une archive', 'local-copycat')}
+                        </Button>
+                    </PanelRow>
+                    <PanelRow>
+                        <Button isPrimary onClick={handleActionRefacto}>
+                            {__('Télécharger l\'archive en direct', 'local-copycat')}
                         </Button>
                     </PanelRow>
                 </PanelBody>

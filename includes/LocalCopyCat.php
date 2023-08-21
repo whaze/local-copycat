@@ -8,6 +8,9 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WP_Error;
 use ZipArchive;
+use ZipStream\Exception\FileNotFoundException;
+use ZipStream\Exception\FileNotReadableException;
+use ZipStream\ZipStream;
 
 class LocalCopyCat {
 	const FILES_PER_BATCH = 100;
@@ -69,6 +72,36 @@ class LocalCopyCat {
 	 * Register REST API routes.
 	 */
 	public function register_rest_routes() {
+
+		register_rest_route(
+			'local-copycat/v1',
+			'/create-download-archive',
+			array(
+				'methods'  => 'GET',
+				'callback' => array( $this, 'create_and_download_archive' ),
+//				'permission_callback' => array( $this, 'check_user_permission' ),
+				'args'     => array(
+					'include_theme'  => array(
+						'type'              => 'boolean',
+						'default'           => true,
+						'sanitize_callback' => 'rest_sanitize_boolean',
+						'validate_callback' => 'rest_validate_request_arg',
+					),
+					'include_plugin' => array(
+						'type'              => 'boolean',
+						'default'           => true,
+						'sanitize_callback' => 'rest_sanitize_boolean',
+						'validate_callback' => 'rest_validate_request_arg',
+					),
+					'include_media'  => array(
+						'type'              => 'boolean',
+						'default'           => true,
+						'sanitize_callback' => 'rest_sanitize_boolean',
+						'validate_callback' => 'rest_validate_request_arg',
+					),
+				),
+			)
+		);
 
 		register_rest_route(
 			'local-copycat/v1',
@@ -199,7 +232,7 @@ class LocalCopyCat {
 	 *
 	 * @return bool|WP_Error Whether the user has permission or not.
 	 */
-	public function check_user_permission() {
+	public function check_user_permission(): WP_Error|bool {
 		if ( ! is_user_logged_in() ) {
 			return new WP_Error(
 				'rest_forbidden',
@@ -221,6 +254,67 @@ class LocalCopyCat {
 			);
 		}
 	}
+
+	public function create_and_download_archive( WP_REST_Request $request ): void {
+
+		// Retrieve parameters
+		$include_theme  = $request->get_param( 'include_theme' );
+		$include_plugin = $request->get_param( 'include_plugin' );
+		$include_media  = $request->get_param( 'include_media' );
+
+		$unique_id = wp_generate_uuid4();
+
+		// Get the current date and time
+		$current_date = date( 'YmdHis' );
+
+		// Create a unique filename based on the current date, unique ID, and .zip extension
+		$filename = "archive_{$current_date}_{$unique_id}.zip";
+		// Create a new ZipStream instance and start streaming the ZIP archive
+		$zip = new ZipStream(
+			sendHttpHeaders: true,
+			outputName: $filename,
+			flushOutput: true,
+		);
+
+		// Add files to the archive based on selected options
+		if ( $include_theme ) {
+			// Add theme files to the archive
+			$this->add_files_to_zipstream( WP_CONTENT_DIR . '/themes', $zip );
+		}
+
+		if ( $include_plugin ) {
+			// Add plugin files to the archive
+			$this->add_files_to_zipstream( WP_PLUGIN_DIR, $zip );
+		}
+
+		if ( $include_media ) {
+			// Add media files to the archive
+			$this->add_files_to_zipstream( WP_CONTENT_DIR . '/uploads', $zip );
+		}
+
+		// Finish streaming the ZIP archive
+		$zip->finish();
+
+	}
+
+	/**
+	 * @throws FileNotFoundException
+	 * @throws FileNotReadableException
+	 */
+	private function add_files_to_zipstream( $folder, ZipStream $zip ): void {
+		$iterator = new RecursiveIteratorIterator(
+			new RecursiveDirectoryIterator( $folder, RecursiveDirectoryIterator::SKIP_DOTS ),
+			RecursiveIteratorIterator::SELF_FIRST
+		);
+
+		foreach ( $iterator as $file ) {
+			if ( $file->isFile() ) {
+				$local_path = substr( $file->getPathname(), strlen( $folder ) + 1 );
+				$zip->addFileFromPath( $local_path, $file->getPathname() );
+			}
+		}
+	}
+
 
 	public function get_available_roles() {
 		$roles = array();
