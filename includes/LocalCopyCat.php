@@ -333,7 +333,7 @@ class LocalCopyCat {
 			'archive_path' => "$archive_dir/$task_id.zip",
 			'progress'     => 0,
 			'completed'    => false,
-			'creationDate' => date('Y-m-d H:i:s'),
+			'creationDate' => date( 'Y-m-d H:i:s' ),
 		);
 
 		// Store the task in the options table
@@ -511,5 +511,26 @@ class LocalCopyCat {
 			'status'  => 'success',
 			'message' => 'Archive deleted.',
 		);
+	}
+
+
+	public static function deactivate_plugin(): void {
+		// delete all options begining with local_copycat_
+		global $wpdb;
+		$wpdb->query( "DELETE FROM $wpdb->options WHERE option_name LIKE 'local_copycat_%'" );
+		if ( $wpdb->last_error ) {
+			die( $wpdb->last_error );
+		}
+
+		// delete all archives
+		$upload_dir  = wp_upload_dir();
+		$archive_dir = $upload_dir['basedir'] . '/local-copycat';
+		if ( file_exists( $archive_dir ) ) {
+			$files = glob( "$archive_dir/*.zip" );
+			foreach ( $files as $file ) {
+				unlink( $file );
+			}
+		}
+
 	}
 }

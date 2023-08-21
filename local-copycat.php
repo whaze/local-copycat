@@ -17,7 +17,12 @@ require plugin_dir_path( __FILE__ ) . 'vendor/autoload.php';
 
 // Instancier la classe principale du plugin
 add_action( 'plugins_loaded', 'local_copycat_init' );
-function local_copycat_init() {
+function local_copycat_init(): void {
 	$local_copycat = new LocalCopyCat();
 	$local_copycat->init();
 }
+
+// Register deactivation hook
+register_deactivation_hook( __FILE__, function () {
+	LocalCopyCat::deactivate_plugin();
+} );
